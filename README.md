@@ -36,3 +36,6 @@ cd python-pytest-testing-project-79
 ## О Хекслете
 
 [Хекслет](https://ru.hexlet.io/) — школа программирования: авторские программы обучения с практикой, поддержкой наставников и реальными проектами, которые остаются в резюме. Этот репозиторий — один из таких проектов.
+
+
+[![hexlet-check](https://github.com/Qwhuo/python-pytest-testing-project-79/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/Qwhuo/python-pytest-testing-project-79/actions/workflows/hexlet-check.yml)
