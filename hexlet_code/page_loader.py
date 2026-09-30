@@ -33,19 +33,26 @@ class PageLoader:
         return p
 
     def download_src(self, soup, page, save_dir):
-        for img in soup.find_all("img"):
-            img_path = img.get("src")
-            if img_path is None:
+        for val in soup.find_all(["img", "script", "link"]):
+            val_path = None
+            attr = ""
+            if "src" in val.attrs:
+                val_path = val.get("src")
+                attr = "src"
+            if "href" in val.attrs:
+                val_path = val.get("href")
+                attr = "href"
+            if val_path is None or (val_path.startswith("http") and urlsplit(val_path).hostname != urlsplit(page).hostname):
                 continue
-            img_path_abs = urljoin(page, img_path)
-            image_get = httpx.get(img_path_abs)
-            if image_get.status_code != httpx.codes.OK:
+            val_path_abs = urljoin(page, val_path)
+            obj_get = httpx.get(val_path_abs)
+            if obj_get.status_code != httpx.codes.OK:
                 warnings.warn("Image wasn't loaded")
                 continue
-            image_cont = image_get.content
-            with open(save_dir / self.form_src_file_name(page, img_path), "wb") as f:
-                f.write(image_cont)
-            img["src"] = self.form_src_dir_name(page) + "/" + self.form_src_file_name(page, img_path)
+            obj_cont = obj_get.content
+            with open(save_dir / self.form_src_file_name(val_path_abs), "wb") as f:
+                f.write(obj_cont)
+            val[attr] = self.form_src_dir_name(page) + "/" + self.form_src_file_name(val_path_abs)
         return soup
 
 
@@ -64,10 +71,14 @@ class PageLoader:
         return name
 
     @staticmethod
-    def form_src_file_name(page, src):
-        path_beg = urlsplit(page).hostname
-        path_beg = re.sub(r"\W", "-", path_beg)
-        name = re.sub(r"\/", "-", src.lower())
-        name = path_beg + name
+    def form_src_file_name(src):
+        name = re.sub(r"(http|https):\/\/", "", src.lower())
+        name = re.sub(r"\W", "-", name)
+        ending = re.split("-", name)[-1]
+        if ending not in ["css", "js", "png", "jpg", "jpeg", "svg", "mp4", "gif"]:
+            ending = "-" + ending + ".html"
+        else:
+            ending = "." + ending
+        name = "-".join(name.split("-")[:-1]) + ending
         return name
 
