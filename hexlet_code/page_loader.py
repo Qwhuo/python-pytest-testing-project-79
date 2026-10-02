@@ -1,7 +1,7 @@
 import os
+import sys
 from pathlib import Path
 import logging
-from http.client import HTTPException
 from bs4 import BeautifulSoup
 import httpx
 from urllib.parse import urljoin, urlsplit
@@ -32,22 +32,35 @@ class PageLoader:
         if page is None:
             logger.critical("No page specified")
             raise TypeError("Cannot download unknown page")
-        page_content = httpx.get(page)
-        if page_content.status_code != httpx.codes.OK:
+        try:
+            page_content = httpx.get(page)
+            page_content.raise_for_status()
+        except httpx.HTTPError as httpx_error:
             logger.error("Page request failed")
-            raise HTTPException(page_content.status_code)
+            print("Page request failed", httpx_error.response.status_code)
+        except httpx.TimeoutException as httpx_error:
+            logger.error("Timeout")
+            print("Timeout", httpx_error.response.status_code)
+        except httpx.ConnectError as httpx_error:
+            logger.error("Page connection error")
+            print("Page connection error", httpx_error.response.status_code)
+        if save_dir is not None and not Path(save_dir).is_dir():
+            logger.error("Save directory does not exist")
+            raise FileNotFoundError("Directory not found")
         filename = self.form_file_name(page)
         p = Path(save_dir) / filename
         soup = BeautifulSoup(page_content.text, "html.parser")
         ###
         src_dir = Path(save_dir) / self.form_src_dir_name(page)
         src_dir.mkdir(parents=True, exist_ok=True)
-        logger.info("Directory %s was created", src_dir)
         ext_soup = self.download_src(soup, page, src_dir).prettify()
         ###
-        with open(p, "w") as f:
-            f.write(ext_soup)
-        logger.info("File %s was saved", p)
+        try:
+            with open(p, "w") as f:
+                f.write(ext_soup)
+                logger.info("File %s was saved", p)
+        except FileNotFoundError:
+            logger.info("Path %s is not valid", p)
         self.pages[filename] = p
         return p
 

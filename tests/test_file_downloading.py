@@ -147,13 +147,18 @@ def test_image_downloading(mock_get, tmp_path, test_cont, test_cont_corr):
     page_loader.download(page="https://ru.hexlet.io/courses", save_dir=tmp_path)
     p = tmp_path / "ru-hexlet-io-courses_files"
     amt = 0
+    name = ""
     for child in p.iterdir():
+        name = child.name
         amt += 1
     assert amt == 1
 
     with open(os.path.join(tmp_path, "ru-hexlet-io-courses.html"), "r") as f:
         result = f.read()
     assert result == BeautifulSoup(test_cont_corr, "html.parser").prettify()
+    with open(os.path.join(p, name), "r") as f:
+        result2 = f.read()
+    assert result2 == "..."
 
 
 @patch("hexlet_code.page_loader.httpx.get")
@@ -203,6 +208,9 @@ def test_src_downloading(mock_get, test_cont2, test_cont2_corr, tmp_path):
         result = f.read()
     assert result == BeautifulSoup(test_cont2_corr, "html.parser").prettify()
     assert js_file == "ru-hexlet-io-packs-js-runtime.js"
+    with open(os.path.join(p, js_file), "r") as f:
+        result2 = f.read()
+    assert result2 == "..."
 
 
 
